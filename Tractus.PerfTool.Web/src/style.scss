@@ -1,0 +1,19 @@
+@import "bootstrap/scss/bootstrap";
+
+
+table td {
+    width: 1% !important;
+    min-width: 64px;
+}
+
+.td-end td {
+    text-align: right;
+}
+
+.vh-max {
+    height: calc(100vh - 128px);
+}
+
+a.nav-link {
+    cursor: pointer;
+}
