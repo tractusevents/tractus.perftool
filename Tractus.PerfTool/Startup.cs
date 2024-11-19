@@ -37,15 +37,16 @@ public class Startup
     {
         app.UseRouting();
         app.UseCors();
+
         app.UseDefaultFiles();
         app.UseStaticFiles();
-        app.UseDirectoryBrowser();
 
-        var fileProvider = new PhysicalFileProvider(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "csv"));
-        app.UseDirectoryBrowser(new DirectoryBrowserOptions
+        app.UseFileServer(new FileServerOptions
         {
-            FileProvider = fileProvider,
+            FileProvider = new PhysicalFileProvider(
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "csv")),
             RequestPath = "/csv",
+            EnableDirectoryBrowsing = true
         });
 
         app.UseEndpoints(endpoints =>
