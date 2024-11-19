@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -21,7 +22,12 @@ public static class Program
 
     public static async Task Main(string[] args)
     {
-        Console.WriteLine("Tractus PerfTool v2024.11.18.1 Starting up...");
+        var assembly = Assembly.GetExecutingAssembly();
+
+        // Get the version information
+        var version = assembly?.GetName()?.Version?.ToString();
+
+        Console.WriteLine($"Tractus PerfTool v{version ?? "0.0.0.0-dev"} Starting up...");
 
         if (args.Any(x => x == "--debugweb"))
         {
