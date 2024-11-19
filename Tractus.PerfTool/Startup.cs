@@ -38,8 +38,12 @@ public class Startup
         app.UseRouting();
         app.UseCors();
 
-        app.UseDefaultFiles();
-        app.UseStaticFiles();
+        app.UseFileServer(new FileServerOptions
+        {
+            FileProvider = new PhysicalFileProvider(Path.Combine(env.WebRootPath)),
+            RequestPath = string.Empty,
+            EnableDirectoryBrowsing = false // No browsing for wwwroot
+        });
 
         app.UseFileServer(new FileServerOptions
         {

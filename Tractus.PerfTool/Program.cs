@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -101,6 +102,12 @@ public static class Program
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureWebHostDefaults(builder =>
             {
+                var contentRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory);
+                var webrootPath = Path.Combine(contentRoot, "wwwroot");
+
+                builder.UseContentRoot(contentRoot); // Explicitly set the content root
+                builder.UseWebRoot(webrootPath);     // Explicitly set the webroot path
+
                 builder.UseUrls("http://+:9000")
                        .UseStartup<Startup>();
             })
@@ -114,7 +121,11 @@ public static class Program
 
         while (true)
         {
-            Console.Clear();
+            if (EnableConsoleLog)
+            {
+                Console.Clear();
+            }
+
             if (Console.KeyAvailable)
             {
                 var keyInfo = Console.ReadKey(intercept: true);
