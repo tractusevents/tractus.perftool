@@ -108,7 +108,7 @@ public static class Program
 
         while (true)
         {
-            Console.SetCursorPosition(0, 0);
+            Console.Clear();
             if (Console.KeyAvailable)
             {
                 var keyInfo = Console.ReadKey(intercept: true);
