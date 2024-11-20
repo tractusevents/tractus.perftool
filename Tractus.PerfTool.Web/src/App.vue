@@ -25,6 +25,8 @@
                     <a class="nav-link"
                         :class="{'active': currentMode === 'pcdetails'}"
                         @click="currentMode = 'pcdetails'">PC Info</a>
+                        <a class="nav-link"
+                        @click="build">Refresh</a>
 
                 </div>
             </div>
@@ -451,6 +453,7 @@ export default {
 
     data() {
         return {
+            maxPoints: 60,
             currentMode: 'all',
             pcDetails: null,
             networkMetrics: [],
@@ -531,14 +534,6 @@ export default {
             return {
                 labels: [...nicData.data.map(x => x.timestamp)], // Timestamps for the X-axis
                 datasets: [
-                    {
-                        label: 'Packets/sec',
-                        backgroundColor: '#f87979',
-                        borderColor: 'transparent',
-                        pointRadius: 0,
-                        data: [...nicData.data.map(x => x.packetsSec)], // Data for packets/sec
-                        fill: 'stack'
-                    },
                     {
                         label: 'Packets Sent Unicast/sec',
                         backgroundColor: '#79f879',
@@ -655,12 +650,35 @@ export default {
         },
 
         async build() {
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            const maxPointsRaw = urlParams.get('points');
+            console.log(urlParams, maxPointsRaw);
+
+            if(maxPointsRaw) {
+                try {
+                    this.maxPoints = parseInt(maxPointsRaw);
+
+                    if(!this.maxPoints || typeof this.maxPoints != 'number') {
+                        this.maxPoints = 60;
+                    }
+                } catch {
+                    this.maxPoints = 60;
+                }
+            }
+
+            
+
+            document.title = `${location.hostname}:9000 | Tractus PerfTool`
+
             if(!this.fetchDataTimer) {
                 this.fetchDataTimer = setInterval(this.fetchData, 1000);
             }
 
             let dataRaw = await fetch(`http://${location.hostname}:9000/pcdetails`);
             this.pcDetails = await dataRaw.json();
+
+            document.title = `${location.hostname}:9000 (${this.pcDetails.machineName}) | Tractus PerfTool`
         },
 
         async fetchData() {
@@ -676,18 +694,13 @@ export default {
                 this.candidateLogCode = data.logCode;
             }
 
-            if(this.globalNetworkMetrics.length >= 300) {
+            if(this.globalNetworkMetrics.length >= this.maxPoints) {
                 this.globalNetworkMetrics.splice(0, 1);
             }
 
             data.globalNetworkMetrics.timestamp = timestamp;
             this.globalNetworkMetrics.push(data.globalNetworkMetrics);
 
-            // TODO: list out the various adapters
-
-            if(this.networkMetrics.length >= 300) {
-                this.networkMetrics.splice(0, 1);
-            } 
 
             for(let i = 0; i < data.networkMetrics.length; i++) {
                 if(this.networkMetrics.length <= i) {
@@ -702,7 +715,7 @@ export default {
                 }
 
                 let nic = this.networkMetrics[i];
-                if(nic.data.length >= 300) {
+                if(nic.data.length >= this.maxPoints) {
                     nic.data.splice(0, 1);
                 }
 
@@ -710,11 +723,6 @@ export default {
                     timestamp: timestamp,
                     ...data.networkMetrics[i]
                 });
-            }
-
-
-            if(this.cpuMetrics.length >= 300) {
-                this.cpuMetrics.splice(0, 1);
             }
 
             for(let i = 0; i < data.processorMetrics.length; i++) {
@@ -732,7 +740,7 @@ export default {
             
                 let cpu = this.cpuMetrics[i];
 
-                if(cpu.data.length >= 300) {
+                if(cpu.data.length >= this.maxPoints) {
                     cpu.data.splice(0, 1);
                 }
 

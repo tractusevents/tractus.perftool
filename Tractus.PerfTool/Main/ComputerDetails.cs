@@ -5,6 +5,10 @@ public class ComputerDetails : IDisposable
 {
     private UpdateVisitor updateVisitor = new();
     private Computer? computer;
+    public void Refresh()
+    {
+        
+    }
 
     public ComputerDetails()
     {
@@ -76,6 +80,7 @@ public class ComputerDetails : IDisposable
             var instanceId = networkAdapter.CimInstanceProperties["InstanceID"]?.Value?.ToString();
 
             var netAdapterPropertiesDict = networkAdapter.CimInstanceProperties.Where(x => x.Name != "Name" && x.Name != "InterfaceDescription" && x.Name != "InstanceID")
+                .OrderBy(x=>x.Name)
                 .ToDictionary(k => k.Name, v =>
                 {
                     return SerializeValue(v?.Value);   
@@ -114,7 +119,7 @@ public class ComputerDetails : IDisposable
                 advancedProperties.Add(toAdd);
             }
 
-            var adapterToAdd = new NetworkAdapterInfo(name, description, instanceId, netAdapterPropertiesDict, advancedProperties.ToArray());
+            var adapterToAdd = new NetworkAdapterInfo(name, description, instanceId, netAdapterPropertiesDict, advancedProperties.OrderBy(x=>x.DisplayName).ToArray());
             adapters.Add(adapterToAdd);
         }
 

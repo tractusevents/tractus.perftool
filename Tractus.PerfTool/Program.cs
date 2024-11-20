@@ -6,6 +6,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 public static class Program
@@ -20,6 +21,8 @@ public static class Program
 
     public static bool EnableWebLogging { get; set; } = false;
     public static bool EnableConsoleLog { get; set; } = true;
+    public static bool Running { get; private set; } = true;
+    public static DateTime? LogStartedDateTime { get; private set; }
 
     public static async Task Main(string[] args)
     {
@@ -119,6 +122,8 @@ public static class Program
 
         var logEnabledLastRun = false;
 
+
+
         while (true)
         {
             if (EnableConsoleLog)
@@ -163,8 +168,41 @@ public static class Program
 
             if (EnableLog && logEnabledLastRun != EnableLog)
             {
+                LogStartedDateTime = DateTime.Now;
+
                 Console.WriteLine($"Enable Log State Change - from {logEnabledLastRun} to {EnableLog} - {LogCode}");
                 logEnabledLastRun = EnableLog;
+
+                if (EnableLog)
+                {
+                    var outputDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "csv", LogStartedDateTime.Value.ToString("yyyyMMdd"), LogCode);
+                    if (!Directory.Exists(outputDirectory))
+                    {
+                        Directory.CreateDirectory(outputDirectory);
+                    }
+
+                    var currentSettings = pcDetails.GetAllNetworkAdapterInfo();
+                    var nicSettingsSerialized = JsonSerializer.Serialize(networkAdapters, new JsonSerializerOptions
+                    {
+                        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals,
+                        Converters =
+                        {
+                            new SemicolonSeparatedStringArrayConverter(),
+                        }
+                    });
+
+
+                    File.WriteAllText(Path.Combine(outputDirectory, $"nic_settings_{LogStartedDateTime.Value.ToString("yyyyMMdd_HHmmss")}.json"), nicSettingsSerialized);
+                }
+            }
+
+            if(logEnabledLastRun != EnableLog)
+            {
+                logEnabledLastRun = EnableLog;
+                if (!EnableLog)
+                {
+                    LogStartedDateTime = null;
+                }
             }
 
             if (EnableLog)
@@ -176,6 +214,7 @@ public static class Program
             Thread.Sleep(1000);
         }
 
+        Running = false;
         await host.StopAsync();
 
         foreach (var procCounters in ProcessorCounters)
@@ -232,6 +271,13 @@ public static class Program
 
     static void LogMetrics(string marker)
     {
+        if(LogStartedDateTime is null)
+        {
+            return;
+        }
+
+        var logFileNameDateTime = LogStartedDateTime.Value.ToString("yyyyMMdd_HHmmss");
+
         var outputDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "csv", DateTime.Now.ToString("yyyyMMdd"), LogCode);
         if (!Directory.Exists(outputDirectory))
         {
@@ -243,7 +289,7 @@ public static class Program
 
         foreach (var nic in NetworkCards)
         {
-            var filePath = Path.Combine(outputDirectory, $"log_{nic.InstanceName}.csv");
+            var filePath = Path.Combine(outputDirectory, $"log_{nic.InstanceName}_{logFileNameDateTime}.csv");
             writeHeader = !File.Exists(filePath);
 
             using var writer = new StreamWriter(filePath, true);
@@ -259,7 +305,7 @@ public static class Program
             writer.Write($"{timestamp},{marker},{megabitsPerSec:F2},{nic.PacketsSec.Current:F2},{nic.PacketsSentUnicastSec.Current:F2},{nic.PacketsSentNonUnicastSec.Current:F2},{nic.PacketsOutboundErrors.Current:F2},{nic.PacketsOutboundDiscarded.Current:F2},{nic.PacketsReceivedUnicastSec.Current:F2},{nic.PacketsReceivedNonUnicastSec.Current:F2},{nic.PacketsReceivedErrors.Current:F2},{nic.PacketsReceivedDiscarded.Current:F2},{nic.OffloadedConnections.Current:F2},{nic.OutputQueueLength.Current:F2}\n");
         }
 
-        var networkFilePath = Path.Combine(outputDirectory, $"log_tcpudp.csv");
+        var networkFilePath = Path.Combine(outputDirectory, $"log_tcpudp_{logFileNameDateTime}.csv");
         writeHeader = !File.Exists(networkFilePath);
         using var networkWriter = new StreamWriter(networkFilePath, true);
 
@@ -270,7 +316,7 @@ public static class Program
         networkWriter.WriteLine($"{timestamp},{marker},{GlobalNetworkMetrics.TcpSegmentsSent:F2},{GlobalNetworkMetrics.TcpSegmentsRecv:F2},{GlobalNetworkMetrics.TcpSegmentsRetransmitted:F2},{GlobalNetworkMetrics.TcpConnectionsEstablished:F2},{GlobalNetworkMetrics.UdpDatagramsSent:F2},{GlobalNetworkMetrics.UdpDatagramsReceivedErrors:F2},{GlobalNetworkMetrics.UdpDatagramsReceivedSec:F2}");
 
 
-        var cpuFilePath = Path.Combine(outputDirectory, "log_cpu.csv");
+        var cpuFilePath = Path.Combine(outputDirectory, $"log_cpu_{logFileNameDateTime}.csv");
         writeHeader |= !File.Exists(cpuFilePath);
         using var cpuWriter = new StreamWriter(cpuFilePath, true);
 
@@ -293,4 +339,3 @@ public static class Program
         cpuWriter.WriteLine();
     }
 }
-

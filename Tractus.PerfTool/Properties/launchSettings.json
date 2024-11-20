@@ -6,7 +6,8 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:23753;http://localhost:23754"
+      "applicationUrl": "https://localhost:23753;http://localhost:23754",
+      "commandLineArgs": "--debugweb --disableconsole"
     }
   }
 }

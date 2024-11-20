@@ -5,8 +5,17 @@ public class Startup
 {
     public void ConfigureServices(IServiceCollection services)
     {
-        services.AddControllers(); // Add support for controllers
+        services.AddControllers().AddJsonOptions(o =>
+        {
+            o.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals;
+        });
+
         services.AddDirectoryBrowser();
+
+        services.ConfigureHttpJsonOptions(o =>
+        {
+            o.SerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals;
+        });
 
         services.AddLogging(l =>
         {
