@@ -17,11 +17,19 @@
                         :class="{'active': currentMode === 'cpu'}"
                         @click="currentMode = 'cpu'">CPU</a>
                     <a class="nav-link"
+                        :class="{'active': currentMode === 'cpuint'}"
+                        @click="currentMode = 'cpuint'">Interrupts/DPCs</a>
+                    <a class="nav-link"
                         :class="{'active': currentMode === 'nic'}"
                         @click="currentMode = 'nic'">NIC</a>
                     <a class="nav-link"
                         :class="{'active': currentMode === 'networkglobal'}"
                         @click="currentMode = 'networkglobal'">TCP/UDP</a>
+                    <a class="nav-link"
+                        :class="{'active': currentMode === 'ipv4'}"
+                        @click="currentMode = 'ipv4'">
+                        IP
+                    </a>
                     <a class="nav-link"
                         :class="{'active': currentMode === 'pcdetails'}"
                         @click="currentMode = 'pcdetails'">PC Info</a>
@@ -138,7 +146,7 @@
         </div>
 
         <div class="row mt-2"
-             v-if="currentMode == 'all' || currentMode == 'cpu'">
+             v-if="currentMode == 'all' || currentMode == 'cpuint'">
             <div class="col-12">
                 <h4>Interrupts by CPU</h4>
                 <BarChart :data="cpuInterruptData">
@@ -147,6 +155,103 @@
             </div>
         </div>
 
+        <div class="row mt-2"
+             v-if="currentMode == 'all' || currentMode == 'cpuint'">
+            <div class="col-12">
+                <table class="table table-sm td-end table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th class="text-end">
+                                CPU #
+                            </th>
+                            <th class="text-center">
+                                TOTAL
+                            </th>
+                            <th v-for="cpu in cpuMetrics" :key="cpu.cpu" class="text-center">
+                                {{ cpu.cpu }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-bold">
+                                Interrupts/sec
+                            </td>
+                            <td>
+                                {{ totalInterrupts.toFixed(2) }}
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].interruptsPerSec.toFixed(2) }}                         
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">
+                                DPCs/sec
+                            </td>
+                            <td>
+                                {{ totalDPCs.toFixed(2) }}
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].dpCsQueuedPerSec.toFixed(2) }}                         
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">
+                                % Usage
+                            </td>
+                            <td>
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].cpuTotal.toFixed(2) }}               
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">
+                                % User
+                            </td>
+                            <td>
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].userTime.toFixed(2) }}               
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">
+                                % Kernel
+                            </td>
+                            <td>
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].privilegedTime.toFixed(2) }}               
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">
+                                % Interrupt
+                            </td>
+                            <td>
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].interruptTime.toFixed(2) }}               
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold">
+                                % DPC
+                            </td>
+                            <td>
+                            </td>
+                            <td v-for="cpu in cpuMetrics" :key="cpu.cpu">
+                                {{ cpu.data[cpu.data.length - 1].dpcTime.toFixed(2) }}               
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
 
         <template v-if="currentMode == 'all' || currentMode == 'nic'">
 
@@ -287,6 +392,61 @@
                 </table>
             </div>
         </div>
+
+        <div class="row"
+             v-if="currentMode == 'all' || currentMode == 'ipv4'">
+            <div class="col-md-4">
+                <h4>IPv4 - Datagrams Recv Discarded</h4>
+                <AreaChart :data="getIpv4Data('ipV4DatagramsRecvDiscarded')"
+                       :height="500"
+                       :useY2="true"
+                       :options="chartOptions">
+                </AreaChart>
+            </div>
+            <div class="col-md-4">
+                <h4>IPv4 - Datagrams Recv Delivered/Sec</h4>
+                <AreaChart :data="getIpv4Data('ipV4DatagramsRecvDeliveredSec')"
+                       :height="500"
+                       :useY2="true"
+                       :options="chartOptions">
+                </AreaChart>
+            </div>
+            <div class="col-md-4">
+                <h4>IPv4 - Datagrams Out Discarded</h4>
+                <AreaChart :data="getIpv4Data('ipV4DatagramsOutDiscarded')"
+                       :height="500"
+                       :useY2="true"
+                       :options="chartOptions">
+                </AreaChart>
+            </div>
+
+            <div class="col-12">
+                <table class="table table-sm td-right">
+                    <tbody>
+                        <tr>
+                            <th>
+                                IPv4 Datagrams Recv Discarded
+                            </th>
+                            <td>
+                                {{ this.ipv4Metrics[this.globalNetworkMetrics.length - 1].ipV4DatagramsRecvDiscarded.toFixed(2) }}
+                            </td>
+                            <th>
+                                IPv4 Datagrams Recv Delivered/sec
+                            </th>
+                            <td>
+                                {{ this.ipv4Metrics[this.globalNetworkMetrics.length - 1].ipV4DatagramsRecvDeliveredSec.toFixed(2) }}
+                            </td>
+                            <th>
+                                IPv4 Datagrams Out Discarded
+                            </th>
+                            <td>
+                                {{ this.ipv4Metrics[this.globalNetworkMetrics.length - 1].ipV4DatagramsOutDiscarded.toFixed(2) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>                
+            </div>
+        </div>
     </div>
     <div v-else class="container text-center vh-max mt-5 pt-3">
         <div class="spinner-border" role="status">
@@ -313,23 +473,75 @@ export default {
     },
 
     computed: {
+        totalInterrupts() {
+            // Sum of all interrupts from the latest sample
+            return this.cpuMetrics.reduce((sum, cpu) => {
+                return sum + cpu.data[cpu.data.length - 1].interruptsPerSec;
+            }, 0);
+        },
+        totalDPCs() {
+            // Sum of all DPCs from the latest sample
+            return this.cpuMetrics.reduce((sum, cpu) => {
+                return sum + cpu.data[cpu.data.length - 1].dpCsQueuedPerSec;
+            }, 0);
+        },
+        averageCpuUsage() {
+        // Average of % CPU usage
+        if (!this.cpuMetrics.length) return 0;
+            const total = this.cpuMetrics.reduce((sum, cpu) => {
+                return sum + cpu.data[cpu.data.length - 1].cpuTotal;
+            }, 0);
+            return total / this.cpuMetrics.length;
+        },
 
         cpuInterruptData() {
             let labels = [...Object.keys(this.cpuMetrics)];
-            let datasets = [ { 
-                label: "Interrupts/Sec",
-                backgroundColor: '#f87979',
-                data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].interruptsPerSec)]
-            }, { 
-                label: "DPCs Queued/Sec",
-                backgroundColor: '#187979',
-                data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].dpCsQueuedPerSec)]
-            }, { 
-                label: "% Usage",
-                backgroundColor: '#187919',
-                yAxisID: 'y2',
-                data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].totalTime)]
-            },]
+            let datasets = [ 
+                { 
+                    label: "Interrupts/Sec",
+                    backgroundColor: '#f87979',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].interruptsPerSec)]
+                }, 
+                { 
+                    label: "DPCs Queued/Sec",
+                    backgroundColor: '#187979',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].dpCsQueuedPerSec)]
+                }, 
+                { 
+                    label: "% Usage",
+                    backgroundColor: '#187919',
+                    yAxisID: 'y2',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].totalTime)]
+                },
+                { 
+                    label: "% User",
+                    backgroundColor: '#0072B2',
+                    yAxisID: 'y2',
+                    stack: 'usageStack',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].userTime)]
+                },
+                { 
+                    label: "% Kernel",
+                    backgroundColor: '#E69F00',
+                    yAxisID: 'y2',
+                    stack: 'usageStack',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].privilegedTime)]
+                },
+                { 
+                    label: "% Interrupt",
+                    backgroundColor: '#009E73',
+                    yAxisID: 'y2',
+                    stack: 'usageStack',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].interruptTime)]
+                },
+                { 
+                    label: "% DPC",
+                    backgroundColor: '#CC79A7',
+                    yAxisID: 'y2',
+                    stack: 'usageStack',
+                    data: [...this.cpuMetrics.map(x => x.data[x.data.length - 1].dpcTime)]
+                },
+            ]
 
             return {
                 labels: labels,
@@ -459,6 +671,7 @@ export default {
             networkMetrics: [],
             cpuMetrics: [],
             globalNetworkMetrics: [],
+            ipv4Metrics: [],
 
             candidateLogCode: '',
             isLogging: false,
@@ -505,6 +718,63 @@ export default {
     },
 
     methods: {
+
+        getIpv4Data(dataSetVariable) {
+            let name = '';
+            let color = '';
+
+            switch(dataSetVariable) {
+                case 'ipV4DatagramsRecvDiscarded':
+                    name = "Datagrams Recv/Discarded";
+                    color = '#0072B2';
+                    break;
+                case 'ipV4DatagramsOutDiscarded':
+                    name = "Datagrams Out/Discarded";
+                    color = '#E69F00';
+                    break;
+                case 'ipV4DatagramsRecvDeliveredSec':
+                    name = 'Datagrams Recv Delivered/sec'
+                    color = '#009E73';
+                    break;
+                default:
+                    break;
+            }
+
+            return {
+                labels: [...this.ipv4Metrics.map(x => x.timestamp)],
+                datasets: [ 
+                    {
+                        label: name,
+                        backgroundColor: color,
+                        borderColor: 'transparent',
+                        pointRadius: 0,
+                        fill: 'stack',
+                        yAxisID: 'y',
+                        data: [...this.ipv4Metrics.map(x => x[dataSetVariable]) ]
+                    },
+                    // {
+                    //     label: 'Datagrams Out/Discarded',
+                    //     backgroundColor: '#181979',
+                    //     borderColor: 'transparent',
+                    //     pointRadius: 0,
+                    //     fill: 'stack',
+                    //     yAxisID: 'y',
+                    //     data: [...this.ipv4Metrics.map(x => x.ipV4DatagramsOutDiscarded) ]
+                    // },
+                    // {
+                    //     label: 'Datagrams Recv Delivered/sec',
+                    //     backgroundColor: '#187979',
+                    //     borderColor: 'transparent',
+                    //     pointRadius: 0,
+                    //     fill: 'stack',
+                    //     yAxisID: 'y',
+                    //     data: [...this.ipv4Metrics.map(x => x.ipV4DatagramsRecvDeliveredSec) ]
+                    // },
+                ]
+            }
+        },
+
+
         getNicBandwidthGraphData(nicData) {
             if(!nicData || !nicData.data) {
                 return;
@@ -694,6 +964,8 @@ export default {
                 this.candidateLogCode = data.logCode;
             }
 
+            //console.log(data);
+
             if(this.globalNetworkMetrics.length >= this.maxPoints) {
                 this.globalNetworkMetrics.splice(0, 1);
             }
@@ -701,6 +973,12 @@ export default {
             data.globalNetworkMetrics.timestamp = timestamp;
             this.globalNetworkMetrics.push(data.globalNetworkMetrics);
 
+            if(this.ipv4Metrics.length >= this.maxPoints) {
+                this.ipv4Metrics.splice(0, 1);
+            }
+
+            data.ipV4Metrics.timestamp = timestamp;
+            this.ipv4Metrics.push(data.ipV4Metrics);
 
             for(let i = 0; i < data.networkMetrics.length; i++) {
                 if(this.networkMetrics.length <= i) {

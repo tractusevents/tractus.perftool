@@ -89,6 +89,12 @@ public class MetricController : ControllerBase
                 Program.GlobalNetworkMetrics.UdpDatagramsReceivedSec,
                 Program.GlobalNetworkMetrics.UdpDatagramsReceivedErrors,
             },
+            IPV4Metrics = new 
+            {
+                Program.GlobalNetworkMetrics.IPV4DatagramsRecvDiscarded,
+                Program.GlobalNetworkMetrics.IPV4DatagramsOutDiscarded,
+                Program.GlobalNetworkMetrics.IPV4DatagramsRecvDeliveredSec
+            },
             ProcessorMetrics = Program.ProcessorCounters.Select(metrics => new
             {
                 metrics.ProcessorInstanceName,
@@ -101,7 +107,6 @@ public class MetricController : ControllerBase
                 metrics.DPCsQueuedPerSec
             })
         };
-
         return this.Ok(metricsData);
     }
 }
